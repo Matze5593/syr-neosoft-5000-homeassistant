@@ -1,0 +1,111 @@
+type: grid
+title: NeoSoft 5000 – Dashboard
+columns: 2
+square: false
+cards:
+  - type: entities
+    title: NeoSoft 5000 – Übersicht
+    show_header_toggle: false
+    entities:
+      - entity: binary_sensor.(IP_ADRESSE_DER_NEOSOFT))
+        name: Verbindung
+        icon: mdi:lan-connect
+      - entity: sensor.neosoft_durchfluss
+        name: Durchfluss (l/h)
+        icon: mdi:water-pump
+      - entity: sensor.neosoft_druck
+        name: Druck (bar)
+        icon: mdi:gauge
+      - entity: sensor.neosoft_temperatur
+        name: Temperatur (°C)
+        icon: mdi:thermometer
+      - entity: sensor.neosoft_gesamtvolumen_liter
+        name: Gesamtvolumen (L)
+        icon: mdi:counter
+      - entity: sensor.neosoft_gesamtvolumen_m3
+        name: Gesamtvolumen (m³)
+        icon: mdi:counter
+      - type: divider
+      - entity: sensor.neosoft_rohwasserharte
+        name: Rohwasserhärte (°dH)
+      - entity: sensor.neosoft_weichwasserharte
+        name: Weichwasserhärte (°dH)
+      - type: divider
+      - entity: sensor.neosoft_salzvorrat
+        name: Salzvorrat (Wochen)
+      - entity: sensor.neosoft_salzmenge
+        name: Salzmenge (kg)
+      - entity: sensor.neosoft_reserve_flasche_1
+        name: Reserve Flasche 1 (L)
+      - entity: sensor.neosoft_reserve_flasche_2
+        name: Reserve Flasche 2 (L)
+      - entity: sensor.neosoft_flasche1_resttage
+        name: Flasche 1 Resttage
+        icon: mdi:clock-end
+      - entity: sensor.neosoft_flasche1_letzte_regeneration
+        name: Flasche 1 letzte Regeneration
+        icon: mdi:history
+      - type: divider
+      - entity: sensor.neosoft_regeneration_status
+        name: Regenerationsstatus
+      - entity: sensor.neosoft_restzeit_regeneration
+        name: Restzeit Regeneration (min)
+      - type: divider
+      - entity: sensor.neosoft_wartung_halbjahrlich
+        name: Nächste Wartung (6 Mon.)
+      - entity: sensor.neosoft_wartung_jahrlich
+        name: Nächste Wartung (12 Mon.)
+  - type: gauge
+    name: Leitungsdruck
+    entity: sensor.neosoft_druck
+    min: 0
+    max: 10
+    severity:
+      green: 0
+      yellow: 5.2
+      red: 8
+  - type: gauge
+    name: Durchfluss
+    entity: sensor.neosoft_durchfluss
+    unit: l/h
+    min: 0
+    max: 2000
+  - type: gauge
+    name: Rohwasserhärte
+    entity: sensor.neosoft_rohwasserharte
+    min: 0
+    max: 40
+    severity:
+      green: 0
+      yellow: 10
+      red: 15
+  - type: gauge
+    name: Weichwasserhärte
+    entity: sensor.neosoft_weichwasserharte
+    min: 0
+    max: 10
+    severity:
+      green: 0
+      yellow: 5
+      red: 8
+  - type: statistics-graph
+    title: Leitungsdruck – 24 h Min/Max
+    entities:
+      - entity: sensor.neosoft_druck
+        name: Druck
+    stat_types: [min, max]
+    periods: [24h]
+    chart_type: line
+    detail: 2
+  - type: sensor
+    entity: sensor.neosoft_gesamtvolumen_m3
+    name: Gesamtvolumen Verlauf
+    graph: line
+    detail: 2
+    unit: m³
+  - type: button
+    name: Regeneration starten
+    icon: mdi:autorenew
+    tap_action:
+      action: call-service
+      service: rest_command.neosoft_start_regen

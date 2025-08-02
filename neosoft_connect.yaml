@@ -1,0 +1,164 @@
+###############################
+#  Paket: NeoSoft-Connect 5000
+#  Datei: neosoft_connect.yaml
+#  by Matze5593 02.08.2025
+###############################
+
+###############################################################
+# 1 | REST-Plattform – EIN Block, mehrere resources
+###############################################################
+rest:
+  # 1a  Basiswerte  /get/all  (30 s)
+  - resource: http://xxxNEOSOFT-IPADRESSExxx:5333/neosoft/get/all
+    scan_interval: 30
+    sensor:
+      - name: NeoSoft Durchfluss
+        unique_id: neosoft_flo
+        unit_of_measurement: "l/h"
+        value_template: "{{ value_json.getFLO }}"
+
+      - name: NeoSoft Gesamtvolumen Liter
+        unique_id: neosoft_vol_l
+        device_class: water
+        state_class: total_increasing
+        unit_of_measurement: "L"
+        value_template: "{{ value_json.getVOL }}"
+
+      - name: NeoSoft Temperatur
+        unique_id: neosoft_temp
+        device_class: temperature
+        unit_of_measurement: "°C"
+        value_template: "{{ (value_json.getCEL | float / 10) | round(1) }}"
+
+      - name: NeoSoft Druck
+        unique_id: neosoft_bar
+        device_class: pressure
+        unit_of_measurement: "bar"
+        value_template: "{{ (value_json.getBAR | float / 1000) | round(2) }}"
+
+      - name: NeoSoft Salzmenge
+        unique_id: neosoft_salt_kg
+        unit_of_measurement: "kg"
+        value_template: "{{ value_json.getSV1 }}"
+
+      # Wasserhärte
+      - name: NeoSoft Rohwasserhaerte
+        unique_id: neosoft_iwh
+        unit_of_measurement: "°dH"
+        value_template: "{{ value_json.getIWH }}"
+
+      - name: NeoSoft Weichwasserhaerte
+        unique_id: neosoft_owh
+        unit_of_measurement: "°dH"
+        value_template: "{{ value_json.getOWH }}"
+
+      # Reserve-Liter
+      - name: NeoSoft Reserve Flasche 1
+        unique_id: neosoft_re1
+        unit_of_measurement: "L"
+        value_template: "{{ value_json.getRE1 }}"
+
+      - name: NeoSoft Reserve Flasche 2
+        unique_id: neosoft_re2
+        unit_of_measurement: "L"
+        value_template: "{{ value_json.getRE2 }}"
+
+      # Regeneration
+      - name: NeoSoft Regeneration Status
+        unique_id: neosoft_rg1
+        value_template: >
+          {% set s = value_json.getRG1 | int %}
+          {% if   s == 0 %}keine Regeneration
+          {% elif s == 1 %}Flasche 1 regeneriert
+          {% elif s == 2 %}Flasche 2 regeneriert
+          {% else %}unbekannt{% endif %}
+
+      - name: NeoSoft Restzeit Regeneration
+        unique_id: neosoft_rti
+        icon: mdi:timer-sand
+        unit_of_measurement: "min"
+        value_template: "{{ (value_json.getRTI | int / 60) | round(0) }}"
+
+  # 1b  Salzvorrat /get/ss1 (1 h)
+  - resource: http://xxxNEOSOFT-IPADRESSExxx:5333/neosoft/get/ss1
+    scan_interval: 3600
+    sensor:
+      - name: NeoSoft Salzvorrat
+        unique_id: neosoft_ss1
+        unit_of_measurement: "Wochen"
+        value_template: "{{ value_json.getSS1 }}"
+
+  # 1c  Halbjährliche Wartung /get/srh (6 h)
+  - resource: http://xxxNEOSOFT-IPADRESSExxx:5333/neosoft/get/srh
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft Wartung Halbjahrlich
+        unique_id: neosoft_srh
+        device_class: timestamp
+        value_template: >
+          {{ '' if value_json.getSRH in ['', '00.00.0000'] else
+             value_json.getSRH[6:10] ~ '-' ~ value_json.getSRH[3:5] ~ '-' ~ value_json.getSRH[0:2] ~ 'T00:00:00+00:00' }}
+
+  # 1d  Jährliche Wartung /get/srv (6 h)
+  - resource: http://192.168.178.41:5333/neosoft/get/srv
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft Wartung Jahrlich
+        unique_id: neosoft_srv
+        device_class: timestamp
+        value_template: >
+          {{ '' if value_json.getSRV in ['', '00.00.0000'] else
+             value_json.getSRV[6:10] ~ '-' ~ value_json.getSRV[3:5] ~ '-' ~ value_json.getSRV[0:2] ~ 'T00:00:00+00:00' }}
+
+###############################################################
+# 2 | Template-Sensoren
+###############################################################
+template:
+  - sensor:
+      # Gesamtvolumen in m³
+      - name: NeoSoft Gesamtvolumen m³
+        unique_id: neosoft_vol_m3
+        device_class: water
+        state_class: total_increasing
+        unit_of_measurement: "m³"
+        state: "{{ states('sensor.neosoft_gesamtvolumen_liter') | float / 1000 }}"
+
+      # Resttage Reserve-Flasche 1
+      - name: NeoSoft Flasche1 Resttage
+        unique_id: neosoft_flasche1_resttage
+        unit_of_measurement: "Tage"
+        state: >
+          {% set rest = states('sensor.neosoft_reserve_flasche_1')|float(0) %}
+          {% set daily = states('sensor.neosoft_wasser_tag_l')|float(1) %}
+          {{ (rest / daily) | round(1) }}
+
+      # Letzte Regeneration Flasche 1
+      - name: NeoSoft Flasche1 Letzte Regeneration
+        unique_id: neosoft_flasche1_letzte_regeneration
+        device_class: timestamp
+        state: "{{ states.sensor.neosoft_regeneration_status.last_changed.isoformat() }}"
+
+###############################################################
+# 3 | Utility-Meter – Tages-/Monats-Zähler
+###############################################################
+utility_meter:
+  neosoft_wasser_tag_l:
+    source: sensor.neosoft_gesamtvolumen_liter
+    cycle: daily
+  neosoft_wasser_monat_l:
+    source: sensor.neosoft_gesamtvolumen_liter
+    cycle: monthly
+  neosoft_wasser_tag_m3:
+    source: sensor.neosoft_gesamtvolumen_m3
+    cycle: daily
+  neosoft_wasser_monat_m3:
+    source: sensor.neosoft_gesamtvolumen_m3
+    cycle: monthly
+
+###############################################################
+# 4 | REST-Command – manuelle Regeneration
+###############################################################
+rest_command:
+  neosoft_start_regen:
+    url: "http://xxxNEOSOFT-IPADRESSExxx:5333/neosoft/set/rmo/1"
+    method: GET
