@@ -17,5 +17,6 @@ Dieses Projekt bindet eine **SYR NeoSoft Connect 5000**-Enthärtungsanlage vollu
 ## Voraussetzungen
 
 * SYR NeoSoft Connect 5000 mit aktivierter Lokalschnittstelle (Port **5333**)
+* Sie müssen die IP-Adresse noch in den YAML hinzufügen die ihre SYR Neosoft hat.
 * Home Assistant ≥ 2023.9 (wegen *statistics-graph*-Card)
 * Ordner-Struktur  
