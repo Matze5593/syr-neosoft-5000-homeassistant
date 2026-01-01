@@ -1,6 +1,8 @@
 ###############################
 #  Paket: NeoSoft-Connect 5000
 #  Datei: neosoft_connect.yaml
+#  by Matze5593 GITHUB
+#  https://github.com/Matze5593/syr-neosoft-5000-homeassistant
 ###############################
 
 ###############################################################
@@ -8,7 +10,7 @@
 ###############################################################
 rest:
   # 1a  Basiswerte  /get/all  (30 s)
-  - resource: http://xxx.xxx.xxx.xxx:5333/neosoft/get/all # deine IP Adresse
+  - resource: http://192.168.178.41:5333/neosoft/get/all
     scan_interval: 30
     sensor:
       - name: NeoSoft Durchfluss
@@ -27,13 +29,13 @@ rest:
         unique_id: neosoft_temp
         device_class: temperature
         unit_of_measurement: "°C"
-        value_template: "{{ (value_json.getCEL | float / 10) | round(1) }}"
+        value_template: "{{ (value_json.getCEL | float(0) / 10) | round(1) }}"
 
       - name: NeoSoft Druck
         unique_id: neosoft_bar
         device_class: pressure
         unit_of_measurement: "bar"
-        value_template: "{{ (value_json.getBAR | float / 1000) | round(2) }}"
+        value_template: "{{ (value_json.getBAR | float(0) / 1000) | round(2) }}"
 
       - name: NeoSoft Salzmenge
         unique_id: neosoft_salt_kg
@@ -66,7 +68,7 @@ rest:
       - name: NeoSoft Regeneration Status
         unique_id: neosoft_rg1
         value_template: >
-          {% set s = value_json.getRG1 | int %}
+          {% set s = value_json.getRG1 | int(0) %}
           {% if   s == 0 %}keine Regeneration
           {% elif s == 1 %}Flasche 1 regeneriert
           {% elif s == 2 %}Flasche 2 regeneriert
@@ -76,10 +78,10 @@ rest:
         unique_id: neosoft_rti
         icon: mdi:timer-sand
         unit_of_measurement: "min"
-        value_template: "{{ (value_json.getRTI | int / 60) | round(0) }}"
+        value_template: "{{ (value_json.getRTI | int(0) / 60) | round(0) }}"
 
   # 1b  Salzvorrat /get/ss1 (1 h)
-  - resource: http://xxx.xxx.xxx.xxx:5333/neosoft/get/ss1
+  - resource: http://192.168.178.41:5333/neosoft/get/ss1
     scan_interval: 3600
     sensor:
       - name: NeoSoft Salzvorrat
@@ -88,7 +90,7 @@ rest:
         value_template: "{{ value_json.getSS1 }}"
 
   # 1c  Halbjährliche Wartung /get/srh (6 h)
-  - resource: http://xxx.xxx.xxx.xxx:5333/neosoft/get/srh
+  - resource: http://192.168.178.41:5333/neosoft/get/srh
     scan_interval: 21600
     sensor:
       - name: NeoSoft Wartung Halbjahrlich
@@ -99,7 +101,7 @@ rest:
              value_json.getSRH[6:10] ~ '-' ~ value_json.getSRH[3:5] ~ '-' ~ value_json.getSRH[0:2] ~ 'T00:00:00+00:00' }}
 
   # 1d  Jährliche Wartung /get/srv (6 h)
-  - resource: http://xxx.xxx.xxx.xxx:5333/neosoft/get/srv
+  - resource: http://192.168.178.41:5333/neosoft/get/srv
     scan_interval: 21600
     sensor:
       - name: NeoSoft Wartung Jahrlich
@@ -108,6 +110,280 @@ rest:
         value_template: >
           {{ '' if value_json.getSRV in ['', '00.00.0000'] else
              value_json.getSRV[6:10] ~ '-' ~ value_json.getSRV[3:5] ~ '-' ~ value_json.getSRV[0:2] ~ 'T00:00:00+00:00' }}
+
+  ###############################################################
+  # Zusatz-GETs aus API-Doku (nur Abfrage)
+  ###############################################################
+
+  # 1e  Regenerationseinstellungen (6 h)
+  - resource: http://192.168.178.41:5333/neosoft/get/rmo
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft Regenerationsmodus
+        unique_id: neosoft_rmo
+        value_template: >
+          {% set m = value_json.getRMO | int(-1) %}
+          {% if   m == 1 %}Standard
+          {% elif m == 2 %}ECO
+          {% elif m == 3 %}Power
+          {% elif m == 4 %}Automatik
+          {% else %}unbekannt{% endif %}
+
+  - resource: http://192.168.178.41:5333/neosoft/get/rpd
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft Regenerationsintervall
+        unique_id: neosoft_rpd
+        unit_of_measurement: "Tage"
+        value_template: "{{ value_json.getRPD }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/rtm
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft Regenerationsuhrzeit
+        unique_id: neosoft_rtm
+        value_template: "{{ value_json.getRTM }}"
+
+  # 1f  Sensorik & Statuswerte (30 s)
+  - resource: http://192.168.178.41:5333/neosoft/get/avo
+    scan_interval: 30
+    sensor:
+      - name: NeoSoft Entnahmevolumen aktuell
+        unique_id: neosoft_avo
+        unit_of_measurement: "ml"
+        value_template: "{{ value_json.getAVO }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/cnd
+    scan_interval: 30
+    sensor:
+      - name: NeoSoft Leitwert
+        unique_id: neosoft_cnd
+        unit_of_measurement: "µS/cm"
+        value_template: "{{ value_json.getCND }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/ltv
+    scan_interval: 30
+    sensor:
+      - name: NeoSoft Letztes Zapfvolumen
+        unique_id: neosoft_ltv
+        unit_of_measurement: "L"
+        value_template: "{{ value_json.getLTV }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/buz
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft Buzzer
+        unique_id: neosoft_buz
+        value_template: "{{ value_json.getBUZ }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/srn
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft Seriennummer
+        unique_id: neosoft_srn
+        value_template: "{{ value_json.getSRN }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/ver
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft Firmware Version
+        unique_id: neosoft_ver
+        value_template: "{{ value_json.getVER }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/vps1
+    scan_interval: 30
+    sensor:
+      - name: NeoSoft Keine Turbinenimpulse Steuerkopf 1 seit
+        unique_id: neosoft_vps1
+        unit_of_measurement: "s"
+        value_template: "{{ value_json.getVPS1 }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/vps2
+    scan_interval: 30
+    sensor:
+      - name: NeoSoft Keine Turbinenimpulse Steuerkopf 2 seit
+        unique_id: neosoft_vps2
+        unit_of_measurement: "s"
+        value_template: "{{ value_json.getVPS2 }}"
+
+  # 1g  Netzwerk (1 h)
+  - resource: http://192.168.178.41:5333/neosoft/get/wfs
+    scan_interval: 3600
+    sensor:
+      - name: NeoSoft WLAN Status
+        unique_id: neosoft_wfs
+        value_template: >
+          {% set s = value_json.getWFS | int(-1) %}
+          {% if   s == 0 %}nicht verbunden
+          {% elif s == 1 %}Verbindung wird aufgebaut
+          {% elif s == 2 %}verbunden
+          {% else %}unbekannt{% endif %}
+
+  - resource: http://192.168.178.41:5333/neosoft/get/wfr
+    scan_interval: 3600
+    sensor:
+      - name: NeoSoft WLAN Signalstaerke
+        unique_id: neosoft_wfr
+        unit_of_measurement: "%"
+        value_template: "{{ value_json.getWFR }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/wip
+    scan_interval: 3600
+    sensor:
+      - name: NeoSoft WLAN IP
+        unique_id: neosoft_wip
+        value_template: "{{ value_json.getWIP }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/wgw
+    scan_interval: 3600
+    sensor:
+      - name: NeoSoft WLAN Gateway
+        unique_id: neosoft_wgw
+        value_template: "{{ value_json.getWGW }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/eip
+    scan_interval: 3600
+    sensor:
+      - name: NeoSoft Ethernet IP
+        unique_id: neosoft_eip
+        value_template: "{{ value_json.getEIP }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/egw
+    scan_interval: 3600
+    sensor:
+      - name: NeoSoft Ethernet Gateway
+        unique_id: neosoft_egw
+        value_template: "{{ value_json.getEGW }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/mac1
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft MAC WLAN
+        unique_id: neosoft_mac1
+        value_template: "{{ value_json.getMAC1 }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/mac2
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft MAC LAN
+        unique_id: neosoft_mac2
+        value_template: "{{ value_json.getMAC2 }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/wfl
+    scan_interval: 21600
+    sensor:
+      - name: NeoSoft WLAN Netzliste
+        unique_id: neosoft_wfl
+        value_template: >
+          {# WFL ist json / Liste – wir geben hier nur die Anzahl zurück #}
+          {% if value_json.getWFL is iterable and value_json.getWFL is not string %}
+            {{ value_json.getWFL | length }}
+          {% else %}
+            {{ 0 }}
+          {% endif %}
+        json_attributes:
+          - getWFL
+
+  # 1h  Alarm Handling (60 s)
+  # Aktueller Alarm: /get/ala
+  # ACHTUNG (BETA)
+  - resource: http://192.168.178.41:5333/neosoft/get/ala
+    scan_interval: 60
+    sensor:
+      - name: NeoSoft Alarm Aktuell
+        unique_id: neosoft_ala
+        value_template: >
+          {% set raw = value_json.getALA %}
+          {% set s = (raw | string | lower | trim) %}
+
+          {# "kein Alarm"-Varianten #}
+          {% if s in ['0', '00', 'ff', '0xff', '', 'none', 'null'] %}
+            Kein Alarm
+          {% else %}
+            {% set n = (s | replace('0x','') | replace('0X','') | int(0, 16)) %}
+            {% set m = {
+              0xA1:'Endschalter',
+              0xA2:'Motorstrom',
+              0xA3:'Volumenleckage',
+              0xA4:'Zeitleckage',
+              0xA5:'Durchflussleckage',
+              0xA6:'Mikroleckageverdacht',
+              0xA7:'Bodensensorleckage',
+              0xA8:'Störung Durchflusssensor',
+              0xA9:'Störung Drucksensor',
+              0xAA:'Störung Temperatursensor',
+              0xAB:'Störung Leitwertsensor',
+              0xAC:'Störung Leitwertsensor',
+              0xAD:'Erhöhte Wasserhärte',
+              0x0D:'Salzvorrat leer',
+              0x0E:'Ventilposition',
+              0xFF:'Kein Alarm'
+            } %}
+            {{ m.get(n, 'Unbekannter Alarmcode: 0x%02X' % n) }}
+          {% endif %}
+
+  - resource: http://192.168.178.41:5333/neosoft/get/wrn
+    scan_interval: 60
+    sensor:
+      - name: NeoSoft Warnung Aktuell
+        unique_id: neosoft_wrn
+        value_template: >
+          {% set raw = value_json.getWRN %}
+          {% set s = (raw | string | lower | trim) %}
+          {% set wrn = (s | replace('0x','') | replace('0X','') | int(0, 16))
+              if (s|regex_match('^(0x)?[0-9a-f]+$'))
+              else (s | int(0)) %}
+          {% set codes = {
+            0: 'Keine Warnung',
+            1: 'Salzvorrat niedrig',
+            2: 'Wartung bald fällig',
+            3: 'Leckage Warnung (Vorstufe)',
+            4: 'Durchfluss unplausibel'
+          } %}
+          {{ codes.get(wrn, 'Unbekannte Warnung Code: ' ~ raw) }}
+
+  - resource: http://192.168.178.41:5333/neosoft/get/not
+    scan_interval: 60
+    sensor:
+      - name: NeoSoft Notification Aktuell
+        unique_id: neosoft_not
+        value_template: >
+          {% set raw = value_json.getNOT %}
+          {% set s = (raw | string | lower | trim) %}
+          {% set noti = (s | replace('0x','') | replace('0X','') | int(0, 16))
+              if (s|regex_match('^(0x)?[0-9a-f]+$'))
+              else (s | int(0)) %}
+          {% set codes = {
+            0: 'Keine Nachricht',
+            1: 'Regeneration gestartet',
+            2: 'Regeneration beendet',
+            3: 'Verbindung hergestellt',
+            4: 'Neustart erfolgt'
+          } %}
+          {{ codes.get(noti, 'Nachricht Code: ' ~ raw) }}
+
+  # Historien: /get/alm, /get/alw, /get/aln
+  - resource: http://192.168.178.41:5333/neosoft/get/alm
+    scan_interval: 300
+    sensor:
+      - name: NeoSoft Alarmspeicher
+        unique_id: neosoft_alm
+        value_template: "{{ value_json.getALM }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/alw
+    scan_interval: 300
+    sensor:
+      - name: NeoSoft Warnspeicher
+        unique_id: neosoft_alw
+        value_template: "{{ value_json.getALW }}"
+
+  - resource: http://192.168.178.41:5333/neosoft/get/aln
+    scan_interval: 300
+    sensor:
+      - name: NeoSoft Notificationspeicher
+        unique_id: neosoft_aln
+        value_template: "{{ value_json.getALN }}"
+
 
 ###############################################################
 # 2 | Template-Sensoren
@@ -120,7 +396,7 @@ template:
         device_class: water
         state_class: total_increasing
         unit_of_measurement: "m³"
-        state: "{{ states('sensor.neosoft_gesamtvolumen_liter') | float / 1000 }}"
+        state: "{{ (states('sensor.neosoft_gesamtvolumen_liter') | float(0) / 1000) | round(3) }}"
 
       # Resttage Reserve-Flasche 1
       - name: NeoSoft Flasche1 Resttage
@@ -129,13 +405,142 @@ template:
         state: >
           {% set rest = states('sensor.neosoft_reserve_flasche_1')|float(0) %}
           {% set daily = states('sensor.neosoft_wasser_tag_l')|float(1) %}
-          {{ (rest / daily) | round(1) }}
+          {% if daily > 0 %}
+            {{ (rest / daily) | round(1) }}
+          {% else %}
+            999
+          {% endif %}
 
-      # Letzte Regeneration Flasche 1
+      # Resttage Reserve-Flasche 2
+      - name: NeoSoft Flasche2 Resttage
+        unique_id: neosoft_flasche2_resttage
+        unit_of_measurement: "Tage"
+        state: >
+          {% set rest = states('sensor.neosoft_reserve_flasche_2')|float(0) %}
+          {% set daily = states('sensor.neosoft_wasser_tag_l')|float(1) %}
+          {% if daily > 0 %}
+            {{ (rest / daily) | round(1) }}
+          {% else %}
+            999
+          {% endif %}
+
+      # Alarmspeicher als Klartext (aus sensor.neosoft_alarmspeicher)
+      # ACHTUNG (BETA)
+      - name: NeoSoft Alarmspeicher Klartext
+        unique_id: neosoft_alarmspeicher_klartext
+        state: >
+          {% set raw0 = states('sensor.neosoft_alarmspeicher') | string | trim %}
+          {% if raw0 in ['unknown','unavailable','none',''] %}
+            —
+          {% else %}
+            {% set m = {
+              0xA1:'Endschalter',
+              0xA2:'Motorstrom',
+              0xA3:'Volumenleckage',
+              0xA4:'Zeitleckage',
+              0xA5:'Durchflussleckage',
+              0xA6:'Mikroleckageverdacht',
+              0xA7:'Bodensensorleckage',
+              0xA8:'Störung Durchflusssensor',
+              0xA9:'Störung Drucksensor',
+              0xAA:'Störung Temperatursensor',
+              0xAB:'Störung Leitwertsensor',
+              0xAC:'Störung Leitwertsensor',
+              0xAD:'Erhöhte Wasserhärte',
+              0x0D:'Salzvorrat leer',
+              0x0E:'Ventilposition',
+              0xFF:'Kein Alarm'
+            } %}
+
+            {# Rohstring säubern (JSON-ähnlich) und splitten #}
+            {% set raw = raw0
+              | replace('[','') | replace(']','')
+              | replace('"','') | replace("'",'')
+              | replace(' ','')
+            %}
+            {% set arr = raw.split(',') if raw|length > 0 else [] %}
+
+            {# aktive Einträge (ohne ff/00/0/leer) #}
+            {% set active = [] %}
+            {% for x in arr %}
+              {% set s = (x | string | lower | trim) %}
+              {% if s not in ['ff','0xff','00','0',''] %}
+                {% set active = active + [s] %}
+              {% endif %}
+            {% endfor %}
+
+            {% if active | length == 0 %}
+              Kein Alarm (Historie leer)
+            {% else %}
+              {% set last = active[-1] | replace('0x','') | replace('0X','') %}
+              {% set n = (last | int(0,16)) %}
+              {{ m.get(n, 'Unbekannter Alarmcode: 0x%02X' % n) }}
+            {% endif %}
+          {% endif %}
+        attributes:
+          raw: "{{ states('sensor.neosoft_alarmspeicher') }}"
+          decoded_list: >
+            {% set raw0 = states('sensor.neosoft_alarmspeicher') | string | trim %}
+            {% set m = {
+              0xA1:'Endschalter',
+              0xA2:'Motorstrom',
+              0xA3:'Volumenleckage',
+              0xA4:'Zeitleckage',
+              0xA5:'Durchflussleckage',
+              0xA6:'Mikroleckageverdacht',
+              0xA7:'Bodensensorleckage',
+              0xA8:'Störung Durchflusssensor',
+              0xA9:'Störung Drucksensor',
+              0xAA:'Störung Temperatursensor',
+              0xAB:'Störung Leitwertsensor',
+              0xAC:'Störung Leitwertsensor',
+              0xAD:'Erhöhte Wasserhärte',
+              0x0D:'Salzvorrat leer',
+              0x0E:'Ventilposition',
+              0xFF:'Kein Alarm'
+            } %}
+            {% if raw0 in ['unknown','unavailable','none',''] %}
+              []
+            {% else %}
+              {% set raw = raw0
+                | replace('[','') | replace(']','')
+                | replace('"','') | replace("'",'')
+              %}
+              {% set arr = raw.split(',') if raw|length > 0 else [] %}
+              {% set ns = namespace(out=[]) %}
+              {% for x in arr %}
+                {% set s = (x|string|lower|trim) %}
+                {% if s in ['','0','00','ff','0xff'] %}
+                  {% set ns.out = ns.out + ['-'] %}
+                {% else %}
+                  {% set n = (s | replace('0x','') | replace('0X','') | int(0,16)) %}
+                  {% set ns.out = ns.out + [ m.get(n, '0x%02X' % n) ] %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.out }}
+            {% endif %}
+
+  # Trigger-basierte Zeitstempel pro Flasche
+  - trigger:
+      - platform: state
+        entity_id: sensor.neosoft_regeneration_status
+        to: "Flasche 1 regeneriert"
+    sensor:
       - name: NeoSoft Flasche1 Letzte Regeneration
         unique_id: neosoft_flasche1_letzte_regeneration
         device_class: timestamp
-        state: "{{ states.sensor.neosoft_regeneration_status.last_changed.isoformat() }}"
+        state: "{{ now().isoformat() }}"
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.neosoft_regeneration_status
+        to: "Flasche 2 regeneriert"
+    sensor:
+      - name: NeoSoft Flasche2 Letzte Regeneration
+        unique_id: neosoft_flasche2_letzte_regeneration
+        device_class: timestamp
+        state: "{{ now().isoformat() }}"
+
 
 ###############################################################
 # 3 | Utility-Meter – Tages-/Monats-Zähler
@@ -154,10 +559,12 @@ utility_meter:
     source: sensor.neosoft_gesamtvolumen_m3
     cycle: monthly
 
+
 ###############################################################
-# 4 | REST-Command – manuelle Regeneration
+# Steuerung teilweise aktiv (nur Regeneration starten)
 ###############################################################
 rest_command:
+  # Regeneration starten
   neosoft_start_regen:
-    url: "http://xxx.xxx.xxx.xxx:5333/neosoft/set/rmo/1"
+    url: "http://192.168.178.41:5333/neosoft/set/rmo/1"
     method: GET
