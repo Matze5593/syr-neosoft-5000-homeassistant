@@ -1,125 +1,383 @@
+title: Syr Neosoft 5000
+# by Matze5593 GITHUB
 views:
-  - title: Home
+  - title: Übersicht
+    path: ubersicht
+    icon: mdi:water-opacity
+    type: sections
+    header:
+      card:
+        type: markdown
+        content: |-
+          # SYR Neosoft 5000
+          Wasseraufbereitungsanlage
+    cards: []
     sections:
       - type: grid
         cards:
-          - type: heading
-            heading: Neuer Abschnitt
-          - type: grid
-            title: NeoSoft 5000 – Dashboard
-            columns: 2
-            square: false
+          - type: vertical-stack
             cards:
-              - type: entities
-                title: NeoSoft 5000 – Übersicht
-                show_header_toggle: false
+              - type: custom:mushroom-title-card
+                title: Betriebsstatus
+                alignment: start
+              - type: conditional
+                conditions:
+                  - entity: sensor.neosoft_alarm_aktuell
+                    state_not: Kein Alarm
+                card:
+                  type: custom:mushroom-template-card
+                  primary: SYSTEMALARM
+                  secondary: '{{ states(''sensor.neosoft_alarm_aktuell'') }}'
+                  icon: mdi:alert-octagon
+                  icon_color: red
+                  layout: horizontal
+                  card_mod:
+                    style: |
+                      ha-card {
+                        background: rgba(244, 67, 54, 0.1);
+                        border: 1px solid rgba(244, 67, 54, 0.5);
+                        animation: pulse 2s infinite;
+                      }
+                      @keyframes pulse {
+                        0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+                        70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+                        100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+                      }
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: custom:mushroom-template-card
+                    primary: >
+                      {% if is_state('sensor.neosoft_regeneration_status',
+                      'keine Regeneration') %} Betriebsbereit {% else %}
+                      Regeneration {% endif %}
+                    secondary: >
+                      {% if is_state('sensor.neosoft_regeneration_status',
+                      'keine Regeneration') %} Keine Störung {% else %} Modus:
+                      Aktiv {% endif %}
+                    icon: >
+                      {% if is_state('sensor.neosoft_regeneration_status',
+                      'keine Regeneration') %} mdi:check-circle {% else %}
+                      mdi:refresh {% endif %}
+                    icon_color: >
+                      {% if is_state('sensor.neosoft_regeneration_status',
+                      'keine Regeneration') %} green {% else %} orange {% endif
+                      %}
+                    layout: horizontal
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-state-icon {
+                          {{ 'animation: spin 2s linear infinite;' if not is_state('sensor.neosoft_regeneration_status', 'keine Regeneration') }}
+                        }
+                  - type: custom:mushroom-template-card
+                    primary: Durchfluss
+                    secondary: >-
+                      {% set s = states('sensor.neosoft_durchfluss') %} {% if s
+                      in ['unknown','unavailable','none',''] %}
+                        —
+                      {% else %}
+                        {% set v = s | float(0) %}
+                        {{ v | round(0) | int }} l/h • {{ (v / 60) | round(2) | replace('.', ',') }} l/min
+                      {% endif %}
+                    icon: mdi:water-sync
+                    icon_color: cyan
+                    layout: horizontal
+                    tap_action:
+                      action: more-info
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_rohwasserhaerte
+                    icon: mdi:water-alert
+                    icon_color: purple
+                    name: Rohwasser
+                    primary_info: state
+                    secondary_info: name
+                    layout: horizontal
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_weichwasserhaerte
+                    icon: mdi:water-check
+                    icon_color: teal
+                    name: Weichwasser
+                    primary_info: state
+                    secondary_info: name
+                    layout: horizontal
+              - type: custom:bar-card
+                title_position: inside
+                height: 40px
+                rounding: 12px
+                positions:
+                  icon: inside
+                  indicator: outside
+                  name: inside
+                  value: inside
+                animation:
+                  state: 'on'
                 entities:
-                  - entity: binary_sensor.192_168_178_41
-                    name: Verbindung
-                    icon: mdi:lan-connect
-                  - entity: sensor.neosoft_durchfluss
-                    name: Durchfluss (l/h)
-                    icon: mdi:water-pump
                   - entity: sensor.neosoft_druck
-                    name: Druck (bar)
+                    name: Wasserdruck
                     icon: mdi:gauge
-                  - entity: sensor.neosoft_temperatur
-                    name: Temperatur (°C)
-                    icon: mdi:thermometer
-                  - entity: sensor.neosoft_gesamtvolumen_liter
-                    name: Gesamtvolumen (L)
-                    icon: mdi:counter
-                  - entity: sensor.neosoft_gesamtvolumen_m3
-                    name: Gesamtvolumen (m³)
-                    icon: mdi:counter
-                  - type: divider
-                  - entity: sensor.neosoft_rohwasserharte
-                    name: Rohwasserhärte (°dH)
-                  - entity: sensor.neosoft_weichwasserharte
-                    name: Weichwasserhärte (°dH)
-                  - type: divider
-                  - entity: sensor.neosoft_salzvorrat
-                    name: Salzvorrat (Wochen)
+                    max: 8
+                    severity:
+                      - color: '#f44336'
+                        from: 0
+                        to: 2.5
+                      - color: '#ffc107'
+                        from: 2.5
+                        to: 3.5
+                      - color: '#4caf50'
+                        from: 3.5
+                        to: 6
+                      - color: '#ffc107'
+                        from: 6
+                        to: 7
+                      - color: '#f44336'
+                        from: 7
+                        to: 8
                   - entity: sensor.neosoft_salzmenge
-                    name: Salzmenge (kg)
+                    name: Salzvorrat
+                    icon: mdi:shaker-outline
+                    max: 50
+                    severity:
+                      - color: '#f44336'
+                        from: 0
+                        to: 5
+                      - color: '#ff9800'
+                        from: 5
+                        to: 10
+                      - color: '#ffc107'
+                        from: 10
+                        to: 20
+                      - color: '#4caf50'
+                        from: 20
+                        to: 50
+                card_mod:
+                  style: |
+                    ha-card {
+                      margin-top: 10px;
+                      margin-bottom: 5px;
+                    }
+              - type: custom:bar-card
+                title_position: inside
+                height: 40px
+                rounding: 12px
+                positions:
+                  icon: inside
+                  indicator: outside
+                  name: inside
+                  value: inside
+                animation:
+                  state: 'on'
+                severity:
+                  - color: '#f44336'
+                    from: 0
+                    to: 100
+                  - color: '#ffc107'
+                    from: 100
+                    to: 200
+                  - color: '#4caf50'
+                    from: 200
+                    to: 800
+                entities:
                   - entity: sensor.neosoft_reserve_flasche_1
-                    name: Reserve Flasche 1 (L)
+                    name: Flasche 1
+                    icon: mdi:bottle-tonic-outline
+                    max: 800
                   - entity: sensor.neosoft_reserve_flasche_2
-                    name: Reserve Flasche 2 (L)
-                  - entity: sensor.neosoft_flasche1_resttage
-                    name: Flasche 1 Resttage
-                    icon: mdi:clock-end
-                  - entity: sensor.neosoft_flasche1_letzte_regeneration
-                    name: Flasche 1 letzte Regeneration
-                    icon: mdi:history
-                  - type: divider
-                  - entity: sensor.neosoft_regeneration_status
-                    name: Regenerationsstatus
-                  - entity: sensor.neosoft_restzeit_regeneration
-                    name: Restzeit Regeneration (min)
-                  - type: divider
-                  - entity: sensor.neosoft_wartung_halbjahrlich
-                    name: Nächste Wartung (6 Mon.)
-                  - entity: sensor.neosoft_wartung_jahrlich
-                    name: Nächste Wartung (12 Mon.)
-              - type: gauge
-                name: Leitungsdruck
-                entity: sensor.neosoft_druck
-                min: 0
-                max: 10
-                severity:
-                  green: 0
-                  yellow: 5.2
-                  red: 8
-              - type: gauge
-                name: Durchfluss
-                entity: sensor.neosoft_durchfluss
-                unit: l/h
-                min: 0
-                max: 2000
-              - type: gauge
-                name: Rohwasserhärte
-                entity: sensor.neosoft_rohwasserharte
-                min: 0
-                max: 40
-                severity:
-                  green: 0
-                  yellow: 10
-                  red: 15
-              - type: gauge
-                name: Weichwasserhärte
-                entity: sensor.neosoft_weichwasserharte
-                min: 0
-                max: 10
-                severity:
-                  green: 0
-                  yellow: 5
-                  red: 8
-              - type: sensor
-                entity: sensor.neosoft_gesamtvolumen_m3
-                name: Gesamtvolumen Verlauf
-                graph: line
-                detail: 2
-                unit: m³
-              - show_name: true
-                show_icon: true
-                type: button
-                name: Regeneration starten
-                icon: mdi:autorenew
+                    name: Flasche 2
+                    icon: mdi:bottle-tonic-outline
+                    max: 800
+                card_mod:
+                  style: |
+                    bar-card-row:nth-of-type(1) bar-card-name::after {
+                      content: " (ca. {{ states('sensor.neosoft_flasche1_resttage') | float(0) | round(1) | replace('.', ',') }} Tage)";
+                      opacity: 0.8;
+                      font-size: 0.85em;
+                    }
+                    bar-card-row:nth-of-type(2) bar-card-name::after {
+                      content: " (ca. {{ states('sensor.neosoft_flasche2_resttage') | float(0) | round(1) | replace('.', ',') }} Tage)";
+                      opacity: 0.8;
+                      font-size: 0.85em;
+                    }
+                    ha-card {
+                      margin-top: 5px;
+                      margin-bottom: 10px;
+                    }
+              - type: grid
+                columns: 3
+                square: false
+                cards:
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_leitwert
+                    icon: mdi:flash
+                    icon_color: purple
+                    layout: vertical
+                    primary_info: state
+                    secondary_info: name
+                    name: Leitwert
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_temperatur
+                    icon: mdi:thermometer
+                    icon_color: amber
+                    layout: vertical
+                    primary_info: state
+                    secondary_info: name
+                    name: Temp
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_salzvorrat
+                    icon: mdi:calendar-clock
+                    icon_color: green
+                    layout: vertical
+                    primary_info: state
+                    secondary_info: name
+                    name: Reichweite
+              - type: custom:mushroom-template-card
+                primary: Regeneration starten
+                secondary: Manuell auslösen
+                icon: mdi:play-circle
+                icon_color: green
+                layout: horizontal
                 tap_action:
                   action: call-service
                   service: rest_command.neosoft_start_regen
+                  confirmation:
+                    text: Soll die Regeneration wirklich gestartet werden?
+                card_mod:
+                  style: |
+                    ha-card {
+                      margin-top: 8px;
+                      border-radius: 16px;
+                      background: rgba(76, 175, 80, 0.1);
+                      border: 1px solid rgba(76, 175, 80, 0.3);
+                    }
       - type: grid
         cards:
           - type: heading
-            heading: Neuer Abschnitt
-          - chart_type: bar
-            period: day
-            type: statistics-graph
-            entities:
-              - sensor.watermeter_totaal_3
-              - sensor.neosoft_wasser_monat_m3
-            stat_types:
-              - change
-            title: Wasserverbvrauch
-            days_to_show: 7
+            heading: Statistik & Technik
+            icon: mdi:chart-line
+          - type: vertical-stack
+            cards:
+              - type: custom:apexcharts-card
+                header:
+                  show: true
+                  title: Statistik
+                  show_states: true
+                  colorize_states: true
+                graph_span: 7d
+                span:
+                  end: day
+                series:
+                  - entity: sensor.neosoft_wasser_tag_l
+                    type: column
+                    name: Verbrauch (L)
+                    color: '#2196F3'
+                    group_by:
+                      func: max
+                      duration: 1d
+                style: |
+                  ha-card {
+                    border-radius: 12px;
+                    box-shadow: none;
+                    border: 1px solid var(--divider-color);
+                  }
+              - type: grid
+                title: Wartung
+                columns: 2
+                square: false
+                cards:
+                  - type: custom:mushroom-template-card
+                    primary: Jährlich
+                    secondary: >-
+                      {{ as_timestamp(states('sensor.neosoft_wartung_jahrlich'))
+                      | timestamp_custom('%d.%m.%y') }}
+                    icon: mdi:wrench
+                    icon_color: blue
+                    layout: vertical
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: var(--card-background-color);
+                          border-radius: 16px;
+                          border: 1px solid var(--divider-color);
+                        }
+                  - type: custom:mushroom-template-card
+                    primary: Halbjährlich
+                    secondary: >-
+                      {{
+                      as_timestamp(states('sensor.neosoft_wartung_halbjahrlich'))
+                      | timestamp_custom('%d.%m.%y') }}
+                    icon: mdi:wrench-clock
+                    icon_color: cyan
+                    layout: vertical
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: var(--card-background-color);
+                          border-radius: 16px;
+                          border: 1px solid var(--divider-color);
+                        }
+              - type: custom:mushroom-title-card
+                title: Netzwerkstatus
+                subtitle: WLAN & LAN Verbindung
+                card_mod:
+                  style: |
+                    ha-card { padding-bottom: 0px; }
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_wlan_status
+                    name: WLAN
+                    icon: mdi:wifi
+                    primary_info: state
+                    secondary_info: name
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_wlan_signalstaerke
+                    name: Signal
+                    icon: mdi:wifi-strength-2
+                    primary_info: state
+                    secondary_info: name
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_wlan_ip
+                    name: IP (WLAN)
+                    icon: mdi:ip-network
+                    primary_info: state
+                    secondary_info: name
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_mac_wlan
+                    name: MAC (WLAN)
+                    icon: mdi:fingerprint
+                    primary_info: state
+                    secondary_info: name
+              - type: custom:mushroom-title-card
+                title: Systeminfo
+                subtitle: Hardware & Versionen
+                card_mod:
+                  style: |
+                    ha-card { padding-bottom: 0px; }
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_firmware_version
+                    name: Firmware
+                    icon: mdi:chip
+                    primary_info: state
+                    secondary_info: name
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.neosoft_seriennummer
+                    name: Serial
+                    icon: mdi:barcode
+                    primary_info: state
+                    secondary_info: name
