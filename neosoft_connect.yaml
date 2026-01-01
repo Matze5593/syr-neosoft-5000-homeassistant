@@ -1,7 +1,6 @@
 ###############################
 #  Paket: NeoSoft-Connect 5000
 #  Datei: neosoft_connect.yaml
-#  by Matze5593 02.08.2025
 ###############################
 
 ###############################################################
@@ -9,7 +8,7 @@
 ###############################################################
 rest:
   # 1a  Basiswerte  /get/all  (30 s)
-  - resource: http://xxxNEOSOFT-IPADRESSExxx:5333/neosoft/get/all
+  - resource: http://xxx.xxx.xxx.xxx:5333/neosoft/get/all # deine IP Adresse
     scan_interval: 30
     sensor:
       - name: NeoSoft Durchfluss
@@ -80,7 +79,7 @@ rest:
         value_template: "{{ (value_json.getRTI | int / 60) | round(0) }}"
 
   # 1b  Salzvorrat /get/ss1 (1 h)
-  - resource: http://xxxNEOSOFT-IPADRESSExxx:5333/neosoft/get/ss1
+  - resource: http://xxx.xxx.xxx.xxx:5333/neosoft/get/ss1
     scan_interval: 3600
     sensor:
       - name: NeoSoft Salzvorrat
@@ -89,7 +88,7 @@ rest:
         value_template: "{{ value_json.getSS1 }}"
 
   # 1c  Halbjährliche Wartung /get/srh (6 h)
-  - resource: http://xxxNEOSOFT-IPADRESSExxx:5333/neosoft/get/srh
+  - resource: http://xxx.xxx.xxx.xxx:5333/neosoft/get/srh
     scan_interval: 21600
     sensor:
       - name: NeoSoft Wartung Halbjahrlich
@@ -100,7 +99,7 @@ rest:
              value_json.getSRH[6:10] ~ '-' ~ value_json.getSRH[3:5] ~ '-' ~ value_json.getSRH[0:2] ~ 'T00:00:00+00:00' }}
 
   # 1d  Jährliche Wartung /get/srv (6 h)
-  - resource: http://192.168.178.41:5333/neosoft/get/srv
+  - resource: http://xxx.xxx.xxx.xxx:5333/neosoft/get/srv
     scan_interval: 21600
     sensor:
       - name: NeoSoft Wartung Jahrlich
@@ -160,5 +159,5 @@ utility_meter:
 ###############################################################
 rest_command:
   neosoft_start_regen:
-    url: "http://xxxNEOSOFT-IPADRESSExxx:5333/neosoft/set/rmo/1"
+    url: "http://xxx.xxx.xxx.xxx:5333/neosoft/set/rmo/1"
     method: GET
