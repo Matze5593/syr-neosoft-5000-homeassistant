@@ -1,5 +1,4 @@
-title: Syr Neosoft 5000
-# by Matze5593 GITHUB
+title: Meine Wasserenthärtung
 views:
   - title: Übersicht
     path: ubersicht
@@ -255,6 +254,127 @@ views:
                       background: rgba(76, 175, 80, 0.1);
                       border: 1px solid rgba(76, 175, 80, 0.3);
                     }
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    primary: Betriebsmodus
+                    secondary: '{{ states(''sensor.neosoft_regenerationsmodus'') }}'
+                    icon: >
+                      {% set m = states('sensor.neosoft_regenerationsmodus') %}
+                      {% if m == 'Standard' %}mdi:alpha-s-circle-outline {% elif
+                      m == 'ECO' %}mdi:leaf {% elif m == 'Power' %}mdi:flash {%
+                      elif m == 'Automatik' %}mdi:refresh-auto {% else
+                      %}mdi:help-circle{% endif %}
+                    icon_color: >
+                      {% set m = states('sensor.neosoft_regenerationsmodus') %}
+                      {% if m == 'Standard' %}blue {% elif m == 'ECO' %}green {%
+                      elif m == 'Power' %}orange {% elif m == 'Automatik'
+                      %}purple {% else %}grey{% endif %}
+                    layout: horizontal
+                    tap_action:
+                      action: none
+                    card_mod:
+                      style: |
+                        ha-card {
+                          margin-top: 8px;
+                          border-radius: 16px 0 0 16px;
+                          border: 1px solid var(--divider-color);
+                          border-right: none;
+                        }
+                  - type: custom:mushroom-chips-card
+                    alignment: end
+                    card_mod:
+                      style: |
+                        ha-card {
+                          margin-top: 8px;
+                          padding: 12px 8px;
+                          border-radius: 0 16px 16px 0;
+                          border: 1px solid var(--divider-color);
+                          border-left: none;
+                          background: var(--card-background-color);
+                          --chip-height: 36px;
+                        }
+                    chips:
+                      - type: template
+                        icon: mdi:alpha-s-circle-outline
+                        icon_color: >
+                          {{ 'blue' if
+                          is_state('sensor.neosoft_regenerationsmodus',
+                          'Standard') else 'grey' }}
+                        tap_action:
+                          action: call-service
+                          service: rest_command.neosoft_set_mode_standard
+                          confirmation:
+                            text: Modus auf Standard wechseln?
+                        card_mod:
+                          style: |
+                            ha-card {
+                              {% if is_state('sensor.neosoft_regenerationsmodus', 'Standard') %}
+                                --chip-background: rgba(33, 150, 243, 0.3);
+                                border: 2px solid rgb(33, 150, 243);
+                              {% endif %}
+                              border-radius: 50%;
+                            }
+                      - type: template
+                        icon: mdi:leaf
+                        icon_color: >
+                          {{ 'green' if
+                          is_state('sensor.neosoft_regenerationsmodus', 'ECO')
+                          else 'grey' }}
+                        tap_action:
+                          action: call-service
+                          service: rest_command.neosoft_set_mode_eco
+                          confirmation:
+                            text: Modus auf ECO wechseln?
+                        card_mod:
+                          style: |
+                            ha-card {
+                              {% if is_state('sensor.neosoft_regenerationsmodus', 'ECO') %}
+                                --chip-background: rgba(76, 175, 80, 0.3);
+                                border: 2px solid rgb(76, 175, 80);
+                              {% endif %}
+                              border-radius: 50%;
+                            }
+                      - type: template
+                        icon: mdi:flash
+                        icon_color: >
+                          {{ 'orange' if
+                          is_state('sensor.neosoft_regenerationsmodus', 'Power')
+                          else 'grey' }}
+                        tap_action:
+                          action: call-service
+                          service: rest_command.neosoft_set_mode_power
+                          confirmation:
+                            text: Modus auf Power wechseln?
+                        card_mod:
+                          style: |
+                            ha-card {
+                              {% if is_state('sensor.neosoft_regenerationsmodus', 'Power') %}
+                                --chip-background: rgba(255, 152, 0, 0.3);
+                                border: 2px solid rgb(255, 152, 0);
+                              {% endif %}
+                              border-radius: 50%;
+                            }
+                      - type: template
+                        icon: mdi:refresh-auto
+                        icon_color: >
+                          {{ 'purple' if
+                          is_state('sensor.neosoft_regenerationsmodus',
+                          'Automatik') else 'grey' }}
+                        tap_action:
+                          action: call-service
+                          service: rest_command.neosoft_set_mode_auto
+                          confirmation:
+                            text: Modus auf Automatik wechseln?
+                        card_mod:
+                          style: |
+                            ha-card {
+                              {% if is_state('sensor.neosoft_regenerationsmodus', 'Automatik') %}
+                                --chip-background: rgba(156, 39, 176, 0.3);
+                                border: 2px solid rgb(156, 39, 176);
+                              {% endif %}
+                              border-radius: 50%;
+                            }
       - type: grid
         cards:
           - type: heading
