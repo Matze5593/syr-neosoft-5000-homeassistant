@@ -2,67 +2,86 @@
 #  Paket: NeoSoft-Connect 5000
 #  Datei: neosoft_connect.yaml
 #  by Matze5593 GITHUB
-#  https://github.com/Matze5593/syr-neosoft-5000-homeassistant
 ###############################
 
 ###############################################################
-# 1 | REST-Plattform – EIN Block, mehrere resources
+# 0 | Konfiguration (IP-Adresse)
+#     Hier die IP ändern. Sie wird überall unten verwendet.
+###############################################################
+input_text:
+  neosoft_ip:
+    name: NeoSoft IP Adresse
+    #  IP-Adresse der Anlage:
+    initial: "192.168.xxx.xxx"
+    icon: mdi:ip-network
+
+###############################################################
+# 1| REST-Plattform – resources
 ###############################################################
 rest:
   # 1a  Basiswerte  /get/all  (30 s)
-  - resource: http://192.168.178.41:5333/neosoft/get/all
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/all"
     scan_interval: 30
     sensor:
       - name: NeoSoft Durchfluss
         unique_id: neosoft_flo
         unit_of_measurement: "l/h"
-        value_template: "{{ value_json.getFLO }}"
+        value_template: "{{ value_json.getFLO | int(0) }}"
+        availability: "{{ value_json.getFLO is defined }}"
 
       - name: NeoSoft Gesamtvolumen Liter
         unique_id: neosoft_vol_l
         device_class: water
         state_class: total_increasing
         unit_of_measurement: "L"
-        value_template: "{{ value_json.getVOL }}"
+        value_template: "{{ value_json.getVOL | int(0) }}"
+        availability: "{{ value_json.getVOL is defined }}"
 
       - name: NeoSoft Temperatur
         unique_id: neosoft_temp
         device_class: temperature
         unit_of_measurement: "°C"
         value_template: "{{ (value_json.getCEL | float(0) / 10) | round(1) }}"
+        availability: "{{ value_json.getCEL is defined }}"
 
       - name: NeoSoft Druck
         unique_id: neosoft_bar
         device_class: pressure
         unit_of_measurement: "bar"
         value_template: "{{ (value_json.getBAR | float(0) / 1000) | round(2) }}"
+        availability: "{{ value_json.getBAR is defined }}"
 
       - name: NeoSoft Salzmenge
         unique_id: neosoft_salt_kg
         unit_of_measurement: "kg"
-        value_template: "{{ value_json.getSV1 }}"
+        value_template: "{{ value_json.getSV1 | int(0) }}"
+        availability: "{{ value_json.getSV1 is defined }}"
 
       # Wasserhärte
       - name: NeoSoft Rohwasserhaerte
         unique_id: neosoft_iwh
         unit_of_measurement: "°dH"
-        value_template: "{{ value_json.getIWH }}"
+        value_template: "{{ value_json.getIWH | int(0) }}"
+        availability: "{{ value_json.getIWH is defined }}"
 
       - name: NeoSoft Weichwasserhaerte
         unique_id: neosoft_owh
         unit_of_measurement: "°dH"
-        value_template: "{{ value_json.getOWH }}"
+        value_template: "{{ value_json.getOWH | int(0) }}"
+        availability: "{{ value_json.getOWH is defined }}"
 
       # Reserve-Liter
       - name: NeoSoft Reserve Flasche 1
         unique_id: neosoft_re1
         unit_of_measurement: "L"
-        value_template: "{{ value_json.getRE1 }}"
+        value_template: "{{ value_json.getRE1 | int(0) }}"
+        availability: "{{ value_json.getRE1 is defined }}"
 
       - name: NeoSoft Reserve Flasche 2
         unique_id: neosoft_re2
         unit_of_measurement: "L"
-        value_template: "{{ value_json.getRE2 }}"
+        value_template: "{{ value_json.getRE2 | int(0) }}"
+        availability: "{{ value_json.getRE2 is defined }}"
 
       # Regeneration
       - name: NeoSoft Regeneration Status
@@ -73,51 +92,62 @@ rest:
           {% elif s == 1 %}Flasche 1 regeneriert
           {% elif s == 2 %}Flasche 2 regeneriert
           {% else %}unbekannt{% endif %}
+        availability: "{{ value_json.getRG1 is defined }}"
 
       - name: NeoSoft Restzeit Regeneration
         unique_id: neosoft_rti
         icon: mdi:timer-sand
         unit_of_measurement: "min"
         value_template: "{{ (value_json.getRTI | int(0) / 60) | round(0) }}"
+        availability: "{{ value_json.getRTI is defined }}"
 
   # 1b  Salzvorrat /get/ss1 (1 h)
-  - resource: http://192.168.178.41:5333/neosoft/get/ss1
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/ss1"
     scan_interval: 3600
     sensor:
       - name: NeoSoft Salzvorrat
         unique_id: neosoft_ss1
         unit_of_measurement: "Wochen"
-        value_template: "{{ value_json.getSS1 }}"
+        value_template: "{{ value_json.getSS1 | int(0) }}"
+        availability: "{{ value_json.getSS1 is defined }}"
 
   # 1c  Halbjährliche Wartung /get/srh (6 h)
-  - resource: http://192.168.178.41:5333/neosoft/get/srh
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/srh"
     scan_interval: 21600
     sensor:
       - name: NeoSoft Wartung Halbjahrlich
         unique_id: neosoft_srh
         device_class: timestamp
         value_template: >
-          {{ '' if value_json.getSRH in ['', '00.00.0000'] else
-             value_json.getSRH[6:10] ~ '-' ~ value_json.getSRH[3:5] ~ '-' ~ value_json.getSRH[0:2] ~ 'T00:00:00+00:00' }}
+          {% if value_json.getSRH in ['', '00.00.0000', none] %}
+            {{ none }}
+          {% else %}
+            {{ value_json.getSRH[6:10] ~ '-' ~ value_json.getSRH[3:5] ~ '-' ~ value_json.getSRH[0:2] ~ 'T00:00:00+00:00' }}
+          {% endif %}
+        availability: "{{ value_json.getSRH is defined }}"
 
   # 1d  Jährliche Wartung /get/srv (6 h)
-  - resource: http://192.168.178.41:5333/neosoft/get/srv
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/srv"
     scan_interval: 21600
     sensor:
       - name: NeoSoft Wartung Jahrlich
         unique_id: neosoft_srv
         device_class: timestamp
         value_template: >
-          {{ '' if value_json.getSRV in ['', '00.00.0000'] else
-             value_json.getSRV[6:10] ~ '-' ~ value_json.getSRV[3:5] ~ '-' ~ value_json.getSRV[0:2] ~ 'T00:00:00+00:00' }}
+          {% if value_json.getSRV in ['', '00.00.0000', none] %}
+            {{ none }}
+          {% else %}
+            {{ value_json.getSRV[6:10] ~ '-' ~ value_json.getSRV[3:5] ~ '-' ~ value_json.getSRV[0:2] ~ 'T00:00:00+00:00' }}
+          {% endif %}
+        availability: "{{ value_json.getSRV is defined }}"
 
   ###############################################################
   # Zusatz-GETs aus API-Doku (nur Abfrage)
   ###############################################################
 
-  # 1e  Regenerationseinstellungen (6 h)
-  - resource: http://192.168.178.41:5333/neosoft/get/rmo
-    scan_interval: 21600
+  # 1e  Regenerationseinstellungen (SCAN INTERVAL 60s FÜR DASHBOARD)
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/rmo"
+    scan_interval: 60
     sensor:
       - name: NeoSoft Regenerationsmodus
         unique_id: neosoft_rmo
@@ -128,86 +158,97 @@ rest:
           {% elif m == 3 %}Power
           {% elif m == 4 %}Automatik
           {% else %}unbekannt{% endif %}
+        availability: "{{ value_json.getRMO is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/rpd
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/rpd"
     scan_interval: 21600
     sensor:
       - name: NeoSoft Regenerationsintervall
         unique_id: neosoft_rpd
         unit_of_measurement: "Tage"
-        value_template: "{{ value_json.getRPD }}"
+        value_template: "{{ value_json.getRPD | int(0) }}"
+        availability: "{{ value_json.getRPD is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/rtm
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/rtm"
     scan_interval: 21600
     sensor:
       - name: NeoSoft Regenerationsuhrzeit
         unique_id: neosoft_rtm
         value_template: "{{ value_json.getRTM }}"
+        availability: "{{ value_json.getRTM is defined }}"
 
   # 1f  Sensorik & Statuswerte (30 s)
-  - resource: http://192.168.178.41:5333/neosoft/get/avo
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/avo"
     scan_interval: 30
     sensor:
       - name: NeoSoft Entnahmevolumen aktuell
         unique_id: neosoft_avo
         unit_of_measurement: "ml"
-        value_template: "{{ value_json.getAVO }}"
+        value_template: "{{ value_json.getAVO | int(0) }}"
+        availability: "{{ value_json.getAVO is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/cnd
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/cnd"
     scan_interval: 30
     sensor:
       - name: NeoSoft Leitwert
         unique_id: neosoft_cnd
         unit_of_measurement: "µS/cm"
-        value_template: "{{ value_json.getCND }}"
+        value_template: "{{ value_json.getCND | int(0) }}"
+        availability: "{{ value_json.getCND is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/ltv
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/ltv"
     scan_interval: 30
     sensor:
       - name: NeoSoft Letztes Zapfvolumen
         unique_id: neosoft_ltv
         unit_of_measurement: "L"
-        value_template: "{{ value_json.getLTV }}"
+        value_template: "{{ value_json.getLTV | int(0) }}"
+        availability: "{{ value_json.getLTV is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/buz
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/buz"
     scan_interval: 21600
     sensor:
       - name: NeoSoft Buzzer
         unique_id: neosoft_buz
         value_template: "{{ value_json.getBUZ }}"
+        availability: "{{ value_json.getBUZ is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/srn
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/srn"
     scan_interval: 21600
     sensor:
       - name: NeoSoft Seriennummer
         unique_id: neosoft_srn
         value_template: "{{ value_json.getSRN }}"
+        availability: "{{ value_json.getSRN is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/ver
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/ver"
     scan_interval: 21600
     sensor:
       - name: NeoSoft Firmware Version
         unique_id: neosoft_ver
         value_template: "{{ value_json.getVER }}"
+        availability: "{{ value_json.getVER is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/vps1
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/vps1"
     scan_interval: 30
     sensor:
       - name: NeoSoft Keine Turbinenimpulse Steuerkopf 1 seit
         unique_id: neosoft_vps1
         unit_of_measurement: "s"
-        value_template: "{{ value_json.getVPS1 }}"
+        value_template: "{{ value_json.getVPS1 | int(0) }}"
+        availability: "{{ value_json.getVPS1 is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/vps2
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/vps2"
     scan_interval: 30
     sensor:
       - name: NeoSoft Keine Turbinenimpulse Steuerkopf 2 seit
         unique_id: neosoft_vps2
         unit_of_measurement: "s"
-        value_template: "{{ value_json.getVPS2 }}"
+        value_template: "{{ value_json.getVPS2 | int(0) }}"
+        availability: "{{ value_json.getVPS2 is defined }}"
 
   # 1g  Netzwerk (1 h)
-  - resource: http://192.168.178.41:5333/neosoft/get/wfs
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/wfs"
     scan_interval: 3600
     sensor:
       - name: NeoSoft WLAN Status
@@ -218,58 +259,66 @@ rest:
           {% elif s == 1 %}Verbindung wird aufgebaut
           {% elif s == 2 %}verbunden
           {% else %}unbekannt{% endif %}
+        availability: "{{ value_json.getWFS is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/wfr
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/wfr"
     scan_interval: 3600
     sensor:
       - name: NeoSoft WLAN Signalstaerke
         unique_id: neosoft_wfr
         unit_of_measurement: "%"
-        value_template: "{{ value_json.getWFR }}"
+        value_template: "{{ value_json.getWFR | int(0) }}"
+        availability: "{{ value_json.getWFR is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/wip
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/wip"
     scan_interval: 3600
     sensor:
       - name: NeoSoft WLAN IP
         unique_id: neosoft_wip
         value_template: "{{ value_json.getWIP }}"
+        availability: "{{ value_json.getWIP is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/wgw
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/wgw"
     scan_interval: 3600
     sensor:
       - name: NeoSoft WLAN Gateway
         unique_id: neosoft_wgw
         value_template: "{{ value_json.getWGW }}"
+        availability: "{{ value_json.getWGW is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/eip
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/eip"
     scan_interval: 3600
     sensor:
       - name: NeoSoft Ethernet IP
         unique_id: neosoft_eip
         value_template: "{{ value_json.getEIP }}"
+        availability: "{{ value_json.getEIP is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/egw
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/egw"
     scan_interval: 3600
     sensor:
       - name: NeoSoft Ethernet Gateway
         unique_id: neosoft_egw
         value_template: "{{ value_json.getEGW }}"
+        availability: "{{ value_json.getEGW is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/mac1
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/mac1"
     scan_interval: 21600
     sensor:
       - name: NeoSoft MAC WLAN
         unique_id: neosoft_mac1
         value_template: "{{ value_json.getMAC1 }}"
+        availability: "{{ value_json.getMAC1 is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/mac2
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/mac2"
     scan_interval: 21600
     sensor:
       - name: NeoSoft MAC LAN
         unique_id: neosoft_mac2
         value_template: "{{ value_json.getMAC2 }}"
+        availability: "{{ value_json.getMAC2 is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/wfl
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/wfl"
     scan_interval: 21600
     sensor:
       - name: NeoSoft WLAN Netzliste
@@ -279,15 +328,14 @@ rest:
           {% if value_json.getWFL is iterable and value_json.getWFL is not string %}
             {{ value_json.getWFL | length }}
           {% else %}
-            {{ 0 }}
+            0
           {% endif %}
         json_attributes:
           - getWFL
+        availability: "{{ value_json.getWFL is defined }}"
 
   # 1h  Alarm Handling (60 s)
-  # Aktueller Alarm: /get/ala
-  # ACHTUNG (BETA)
-  - resource: http://192.168.178.41:5333/neosoft/get/ala
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/ala"
     scan_interval: 60
     sensor:
       - name: NeoSoft Alarm Aktuell
@@ -295,8 +343,6 @@ rest:
         value_template: >
           {% set raw = value_json.getALA %}
           {% set s = (raw | string | lower | trim) %}
-
-          {# "kein Alarm"-Varianten #}
           {% if s in ['0', '00', 'ff', '0xff', '', 'none', 'null'] %}
             Kein Alarm
           {% else %}
@@ -321,8 +367,9 @@ rest:
             } %}
             {{ m.get(n, 'Unbekannter Alarmcode: 0x%02X' % n) }}
           {% endif %}
+        availability: "{{ value_json.getALA is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/wrn
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/wrn"
     scan_interval: 60
     sensor:
       - name: NeoSoft Warnung Aktuell
@@ -341,8 +388,9 @@ rest:
             4: 'Durchfluss unplausibel'
           } %}
           {{ codes.get(wrn, 'Unbekannte Warnung Code: ' ~ raw) }}
+        availability: "{{ value_json.getWRN is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/not
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/not"
     scan_interval: 60
     sensor:
       - name: NeoSoft Notification Aktuell
@@ -361,34 +409,39 @@ rest:
             4: 'Neustart erfolgt'
           } %}
           {{ codes.get(noti, 'Nachricht Code: ' ~ raw) }}
+        availability: "{{ value_json.getNOT is defined }}"
 
   # Historien: /get/alm, /get/alw, /get/aln
-  - resource: http://192.168.178.41:5333/neosoft/get/alm
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/alm"
     scan_interval: 300
     sensor:
       - name: NeoSoft Alarmspeicher
         unique_id: neosoft_alm
         value_template: "{{ value_json.getALM }}"
+        availability: "{{ value_json.getALM is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/alw
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/alw"
     scan_interval: 300
     sensor:
       - name: NeoSoft Warnspeicher
         unique_id: neosoft_alw
         value_template: "{{ value_json.getALW }}"
+        availability: "{{ value_json.getALW is defined }}"
 
-  - resource: http://192.168.178.41:5333/neosoft/get/aln
+  - resource_template: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/get/aln"
     scan_interval: 300
     sensor:
       - name: NeoSoft Notificationspeicher
         unique_id: neosoft_aln
         value_template: "{{ value_json.getALN }}"
+        availability: "{{ value_json.getALN is defined }}"
 
 
 ###############################################################
 # 2 | Template-Sensoren
 ###############################################################
 template:
+  # Standard Template-Sensoren
   - sensor:
       # Gesamtvolumen in m³
       - name: NeoSoft Gesamtvolumen m³
@@ -397,35 +450,56 @@ template:
         state_class: total_increasing
         unit_of_measurement: "m³"
         state: "{{ (states('sensor.neosoft_gesamtvolumen_liter') | float(0) / 1000) | round(3) }}"
+        availability: "{{ is_number(states('sensor.neosoft_gesamtvolumen_liter')) }}"
 
-      # Resttage Reserve-Flasche 1
+      # Resttage Reserve-Flasche 1 (mit 3-Tage Cap & 5% Puffer)
       - name: NeoSoft Flasche1 Resttage
         unique_id: neosoft_flasche1_resttage
         unit_of_measurement: "Tage"
         state: >
-          {% set rest = states('sensor.neosoft_reserve_flasche_1')|float(0) %}
-          {% set daily = states('sensor.neosoft_wasser_tag_l')|float(1) %}
-          {% if daily > 0 %}
-            {{ (rest / daily) | round(1) }}
-          {% else %}
-            999
-          {% endif %}
+          {% set rest_raw = states('sensor.neosoft_reserve_flasche_1') | float(0) %}
+          {% set daily = states('sensor.neosoft_wasser_tag_l') | float(0) %}
+          {# Zwangsregeneration nach X Tagen (Standard 3, falls Sensor nicht da) #}
+          {% set max_days = states('sensor.neosoft_regenerationsintervall') | float(3) %}
+          
+          {# Wir ziehen 5% ab, da diese nicht nutzbar sind (Regeneration startet) #}
+          {# Annahme: Die Flasche ist voll, wenn der Wert steigt, aber als Näherung nehmen wir einfach 5% vom aktuellen Wert weg #}
+          {% set rest = rest_raw * 0.95 %}
 
-      # Resttage Reserve-Flasche 2
+          {% if daily > 0 %}
+            {% set days_calc = (rest / daily) %}
+            {# Wir nehmen den kleineren Wert: Entweder Wasser-Reichweite oder Zwangsintervall #}
+            {{ [days_calc, max_days] | min | round(1) }}
+          {% else %}
+            {# Wenn kein Verbrauch, zeigen wir maximal das Zwangsintervall an #}
+            {{ max_days }}
+          {% endif %}
+        availability: >
+          {{ is_number(states('sensor.neosoft_reserve_flasche_1')) and
+             is_number(states('sensor.neosoft_wasser_tag_l')) }}
+
+      # Resttage Reserve-Flasche 2 (mit 3-Tage Cap & 5% Puffer)
       - name: NeoSoft Flasche2 Resttage
         unique_id: neosoft_flasche2_resttage
         unit_of_measurement: "Tage"
         state: >
-          {% set rest = states('sensor.neosoft_reserve_flasche_2')|float(0) %}
-          {% set daily = states('sensor.neosoft_wasser_tag_l')|float(1) %}
-          {% if daily > 0 %}
-            {{ (rest / daily) | round(1) }}
-          {% else %}
-            999
-          {% endif %}
+          {% set rest_raw = states('sensor.neosoft_reserve_flasche_2') | float(0) %}
+          {% set daily = states('sensor.neosoft_wasser_tag_l') | float(0) %}
+          {% set max_days = states('sensor.neosoft_regenerationsintervall') | float(3) %}
+          
+          {% set rest = rest_raw * 0.95 %}
 
-      # Alarmspeicher als Klartext (aus sensor.neosoft_alarmspeicher)
-      # ACHTUNG (BETA)
+          {% if daily > 0 %}
+            {% set days_calc = (rest / daily) %}
+            {{ [days_calc, max_days] | min | round(1) }}
+          {% else %}
+            {{ max_days }}
+          {% endif %}
+        availability: >
+          {{ is_number(states('sensor.neosoft_reserve_flasche_2')) and
+             is_number(states('sensor.neosoft_wasser_tag_l')) }}
+
+      # Alarmspeicher als Klartext
       - name: NeoSoft Alarmspeicher Klartext
         unique_id: neosoft_alarmspeicher_klartext
         state: >
@@ -451,16 +525,12 @@ template:
               0x0E:'Ventilposition',
               0xFF:'Kein Alarm'
             } %}
-
-            {# Rohstring säubern (JSON-ähnlich) und splitten #}
             {% set raw = raw0
               | replace('[','') | replace(']','')
               | replace('"','') | replace("'",'')
               | replace(' ','')
             %}
             {% set arr = raw.split(',') if raw|length > 0 else [] %}
-
-            {# aktive Einträge (ohne ff/00/0/leer) #}
             {% set active = [] %}
             {% for x in arr %}
               {% set s = (x | string | lower | trim) %}
@@ -468,7 +538,6 @@ template:
                 {% set active = active + [s] %}
               {% endif %}
             {% endfor %}
-
             {% if active | length == 0 %}
               Kein Alarm (Historie leer)
             {% else %}
@@ -477,6 +546,8 @@ template:
               {{ m.get(n, 'Unbekannter Alarmcode: 0x%02X' % n) }}
             {% endif %}
           {% endif %}
+        availability: >
+          {{ states('sensor.neosoft_alarmspeicher') not in ['unknown', 'unavailable'] }}
         attributes:
           raw: "{{ states('sensor.neosoft_alarmspeicher') }}"
           decoded_list: >
@@ -520,7 +591,7 @@ template:
               {{ ns.out }}
             {% endif %}
 
-  # Trigger-basierte Zeitstempel pro Flasche
+  # Trigger-basierte Zeitstempel Flasche 1
   - trigger:
       - platform: state
         entity_id: sensor.neosoft_regeneration_status
@@ -531,6 +602,7 @@ template:
         device_class: timestamp
         state: "{{ now().isoformat() }}"
 
+  # Trigger-basierte Zeitstempel Flasche 2
   - trigger:
       - platform: state
         entity_id: sensor.neosoft_regeneration_status
@@ -549,22 +621,64 @@ utility_meter:
   neosoft_wasser_tag_l:
     source: sensor.neosoft_gesamtvolumen_liter
     cycle: daily
+    delta_values: false
   neosoft_wasser_monat_l:
     source: sensor.neosoft_gesamtvolumen_liter
     cycle: monthly
+    delta_values: false
   neosoft_wasser_tag_m3:
     source: sensor.neosoft_gesamtvolumen_m3
     cycle: daily
+    delta_values: false
   neosoft_wasser_monat_m3:
     source: sensor.neosoft_gesamtvolumen_m3
     cycle: monthly
+    delta_values: false
 
 
 ###############################################################
-# Steuerung teilweise aktiv (nur Regeneration starten)
+# 4 | REST Commands – Steuerung
+#     Nutzung von Templates in URL
 ###############################################################
 rest_command:
-  # Regeneration starten
+  # Regeneration manuell starten
   neosoft_start_regen:
-    url: "http://192.168.178.41:5333/neosoft/set/rmo/1"
+    url: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/set/rmo/1"
     method: GET
+
+  # Modus: Standard (1)
+  neosoft_set_mode_standard:
+    url: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/set/rmo/1"
+    method: GET
+
+  # Modus: ECO (2)
+  neosoft_set_mode_eco:
+    url: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/set/rmo/2"
+    method: GET
+
+  # Modus: Power (3)
+  neosoft_set_mode_power:
+    url: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/set/rmo/3"
+    method: GET
+
+  # Modus: Automatik (4)
+  neosoft_set_mode_auto:
+    url: "http://{{ states('input_text.neosoft_ip') }}:5333/neosoft/set/rmo/4"
+    method: GET
+
+###############################################################
+# 5 | Automatisierung – Update erzwingen
+#     Sorgt dafür, dass nach Button-Klick der Status sofort aktualisiert wird
+###############################################################
+automation:
+  - alias: "NeoSoft Modus Sofort-Update"
+    trigger:
+      platform: event
+      event_type: call_service
+      event_data:
+        domain: rest_command
+    action:
+      - delay: "00:00:01"
+      - service: homeassistant.update_entity
+        target:
+          entity_id: sensor.neosoft_regenerationsmodus
